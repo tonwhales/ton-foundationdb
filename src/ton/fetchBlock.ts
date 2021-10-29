@@ -1,3 +1,4 @@
+import { backoff } from "@openland/patterns";
 import DataLoader from "dataloader";
 import { Address, TonTransaction } from "ton";
 import { tonClient } from "..";
@@ -22,14 +23,14 @@ export type TonBlock = {
 
 const shardsLoader = new DataLoader<number, TonShardDef[]>(async (src) => {
     return await Promise.all(src.map(async (seqno) => {
-        return await tonClient.getWorkchainShards(seqno);
+        return await backoff(() => tonClient.getWorkchainShards(seqno));
     }));
 });
 
 const shardLoader = new DataLoader<TonShardDef, TonShard, string>(async (src) => {
     return Promise.all(src.map(async (def) => {
         if (def.seqno > 0) {
-            let tx = await tonClient.getShardTransactions(def.workchain, def.seqno, def.shard);
+            let tx = await backoff(() => tonClient.getShardTransactions(def.workchain, def.seqno, def.shard));
             let transactions = await Promise.all(tx.map(async (v) => ({ address: v.account, lt: v.lt, hash: v.hash })));
             return {
                 workchain: def.workchain,
