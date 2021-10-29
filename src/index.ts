@@ -1,12 +1,22 @@
 import { createNamedContext } from "@openland/context";
 import { Database, encoders, inTx } from "@openland/foundationdb";
-import BN, { min } from "bn.js";
-import { dir } from "console";
+import { backoff } from "@openland/patterns";
+import BN from "bn.js";
 import { Address, TonClient } from 'ton';
-import { fetchBlock, TonBlock } from "./ton/fetchBlock";
 
 const root = createNamedContext('indexer');
-export const tonClient = new TonClient({ endpoint: 'http://localhost:80/jsonRPC' });
+
+type TonShard = {
+    workchain: number;
+    shard: string;
+    seqno: number;
+    transactions: { address: Address, lt: string, hash: string }[];
+}
+
+type TonBlock = {
+    seqno: number;
+    shards: TonShard[];
+}
 
 (async () => {
     console.log('Opening database...');
@@ -20,9 +30,31 @@ export const tonClient = new TonClient({ endpoint: 'http://localhost:80/jsonRPC'
         let sync = (await db.directories.createOrOpen(ctx, ['ton', 'sync']))
             .withKeyEncoding(encoders.tuple)
             .withValueEncoding(encoders.int32LE);
-        return { accounts, transactions, blocks, sync };
+        let cache = (await db.directories.createOrOpen(ctx, ['ton', 'cache']))
+            .withKeyEncoding(encoders.tuple)
+            .withValueEncoding(encoders.string);
+        return { accounts, transactions, blocks, sync, cache };
     });
     console.log('Fetching masterchain info...');
+    const tonClient = new TonClient({
+        endpoint: 'http://localhost:80/jsonRPC',
+        cache: {
+            get: (namespace, key) => {
+                return inTx(root, (ctx) => {
+                    return dirs.cache.get(ctx, [namespace, key]);
+                })
+            },
+            set: async (namespace, key, value) => {
+                await inTx(root, async (ctx) => {
+                    if (value) {
+                        dirs.cache.set(ctx, [namespace, key], value);
+                    } else {
+                        dirs.cache.clear(ctx, [namespace, key]);
+                    }
+                });
+            }
+        }
+    });
     let mcInfo = await tonClient.getMasterchainInfo();
 
     //
@@ -103,14 +135,57 @@ export const tonClient = new TonClient({ endpoint: 'http://localhost:80/jsonRPC'
         });
     }
 
+    const CURRENT_VERSION = 2;
     let startFrom = await inTx(root, async (ctx) => {
         let ex = (await dirs.sync.get(ctx, ['blocks']));
+        let version = (await dirs.sync.get(ctx, ['version']));
+        if (version !== CURRENT_VERSION) {
+            dirs.sync.set(ctx, ['blocks'], 1);
+            dirs.sync.set(ctx, ['version'], CURRENT_VERSION);
+            return 1;
+        }
         if (ex) {
             return ex + 1;
         } else {
             return 1;
         }
     });
+
+    //
+    // Api
+    //
+
+    async function fetchBlock(seqno: number) {
+        // Load shard defs
+        let shardDefs = await backoff(() => tonClient.getWorkchainShards(seqno));
+        shardDefs = [{ workchain: -1, seqno, shard: '-9223372036854775808' }, ...shardDefs];
+
+        // Load shards
+        let shards = await Promise.all(shardDefs.map(async (def) => {
+            if (def.seqno > 0) {
+                let tx = await backoff(() => tonClient.getShardTransactions(def.workchain, def.seqno, def.shard));
+                let transactions = await Promise.all(tx.map(async (v) => ({ address: v.account, lt: v.lt, hash: v.hash })));
+                return {
+                    workchain: def.workchain,
+                    seqno: def.seqno,
+                    shard: def.shard,
+                    transactions
+                };
+            } else {
+                return {
+                    workchain: def.workchain,
+                    seqno: def.seqno,
+                    shard: def.shard,
+                    transactions: []
+                };
+            }
+        }));
+
+        return {
+            seqno,
+            shards
+        };
+    }
 
     // Start fetching
     const BATCH_SIZE = 100;

@@ -171,10 +171,10 @@ ton-crypto@1.5.1:
     jssha "3.2.0"
     tweetnacl "1.0.3"
 
-ton@^4.24.1:
-  version "4.24.1"
-  resolved "https://registry.yarnpkg.com/ton/-/ton-4.24.1.tgz#00340e6f99dd0a1927abd413c7968f05f0645bc3"
-  integrity sha512-iBLP9nw+dWqavX7rhqYHD6dRfksc6pem0WNk/HP2QKHAaCM1XF0oIlL7vGl2vWUyVUorMQxp/xedr9K1Kuc8MA==
+ton@^4.25.0:
+  version "4.25.0"
+  resolved "https://registry.yarnpkg.com/ton/-/ton-4.25.0.tgz#1942358b48180ac9103b11c7c4c68678580bffcc"
+  integrity sha512-pU85Y31J8jlFLVYAjlQ81Hy8XQQybR3hKtG0VWd745Hk5bcQ7toyR0I4x0B+5sunxuFL/PEmPwxMuXbmPZMKUg==
   dependencies:
     bn.js "5.2.0"
     dataloader "^2.0.0"
