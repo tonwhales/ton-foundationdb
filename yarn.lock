@@ -37,11 +37,6 @@
   dependencies:
     "@openland/context" "*"
 
-"@openland/patterns@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@openland/patterns/-/patterns-0.0.2.tgz#ada0417c4e72aeeb461bf9d8759ecd9ca1ebf51d"
-  integrity sha512-ttgJELwtG8cIER1JeWjkIMg3e+MlAL6n4wFPSNPoBCl+5t3G/HIz9kolvxBmN5/3RXEgh68NnePzGiUBaUHmRQ==
-
 "@types/bn.js@^5.1.0":
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.0.tgz#32c5d271503a12653c62cf4d2b45e6eab8cebc68"
@@ -162,6 +157,11 @@ symbol.inspect@1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/symbol.inspect/-/symbol.inspect-1.0.1.tgz#e13125b8038c4996eb0dfa1567332ad4dcd0763f"
   integrity sha512-YQSL4duoHmLhsTD1Pw8RW6TZ5MaTX5rXJnqacJottr2P2LZBF/Yvrc3ku4NUpMOm8aM0KOCqM+UAkMA5HWQCzQ==
+
+teslabot@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/teslabot/-/teslabot-1.2.1.tgz#39f6536c5fe92849f438885a3eb3fcc0a6f1a8ac"
+  integrity sha512-AwFeiJwJYQeKUii9KFdsNm0WVGtCBJGlmwbPNRlgU/hLbMmkFDSdaZrm2e4W1MJ1dB34tBW8ysjGb4uxY5vdmQ==
 
 ton-crypto@1.5.1:
   version "1.5.1"

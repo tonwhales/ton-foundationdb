@@ -1,10 +1,11 @@
 import { createNamedContext } from "@openland/context";
 import { Database, encoders, inTx } from "@openland/foundationdb";
-import { backoff } from "@openland/patterns";
+import { BoundedConcurrencyPool, createBackoff, Queue } from "teslabot";
 import BN from "bn.js";
 import { Address, TonClient } from 'ton';
 
 const root = createNamedContext('indexer');
+const backoff = createBackoff();
 
 type TonShard = {
     workchain: number;
@@ -135,7 +136,7 @@ type TonBlock = {
         });
     }
 
-    const CURRENT_VERSION = 2;
+    const CURRENT_VERSION = 3;
     let startFrom = await inTx(root, async (ctx) => {
         let ex = (await dirs.sync.get(ctx, ['blocks']));
         let version = (await dirs.sync.get(ctx, ['version']));
@@ -188,18 +189,30 @@ type TonBlock = {
     }
 
     // Start fetching
-    const BATCH_SIZE = 100;
-    for (let ss = startFrom; ss <= mcInfo.latestSeqno; ss += BATCH_SIZE) {
-        let ids: number[] = [];
-        for (let s = ss; s <= mcInfo.latestSeqno && s - ss < BATCH_SIZE; s++) {
-            ids.push(s);
-        }
-        console.log('Fetching block #' + ss + ' - ' + (ss + ids.length));
-        const blocks = await Promise.all(ids.map(async (seq) => {
-            return await fetchBlock(seq);
-        }));
+    const blockQueue = new Queue<TonBlock>();
 
-        // Apply
-        await processBlock(blocks, ids[ids.length - 1]);
+    // Fetching
+    (async () => {
+        const BATCH_SIZE = 100;
+        for (let ss = startFrom; ss <= mcInfo.latestSeqno; ss += BATCH_SIZE) {
+            let ids: number[] = [];
+            for (let s = ss; s <= mcInfo.latestSeqno && s - ss < BATCH_SIZE; s++) {
+                ids.push(s);
+            }
+            console.log('Fetching block #' + ss + ' - ' + (ss + ids.length));
+            const blocks = await Promise.all(ids.map(async (seq) => {
+                return await fetchBlock(seq);
+            }));
+            for (let b of blocks) {
+                blockQueue.push(b);
+            }
+        }
+    })();
+
+    // Processing
+    while (true) {
+        let block = await blockQueue.get();
+        console.log('Processing block #' + block.seqno);
+        await processBlock([block], block.seqno);
     }
 })();
