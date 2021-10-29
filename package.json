@@ -1,0 +1,22 @@
+{
+  "name": "ton-foundationdb",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/ex3ndr/ton-foundationdb.git",
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -fr build && tsc",
+    "start": "node ./build/index.js",
+    "dev": "yarn build && yarn start"
+  },
+  "dependencies": {
+    "@openland/context": "^0.5.2",
+    "@openland/foundationdb": "^11.13.0",
+    "@openland/lifetime": "^0.2.1",
+    "@openland/patterns": "^0.0.2",
+    "@types/node": "^16.11.6",
+    "foundationdb": "^1.1.2",
+    "ton": "^4.24.1",
+    "typescript": "^4.4.4"
+  }
+}
