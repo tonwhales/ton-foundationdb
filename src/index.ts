@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { Address, TonClient } from 'ton';
 
 const root = createNamedContext('indexer');
-const backoff = createBackoff();
+const backoff = createBackoff({ onError: (e) => console.warn(e) });
 
 type TonShard = {
     workchain: number;
@@ -41,14 +41,41 @@ type TonBlock = {
         endpoint: 'http://localhost:80/jsonRPC',
         cache: {
             get: (namespace, key) => {
-                return inTx(root, (ctx) => {
-                    return dirs.cache.get(ctx, [namespace, key]);
+                return inTx(root, async (ctx) => {
+                    let all = await dirs.cache.range(ctx, [namespace, key]);
+                    if (all.length === 0) {
+                        return null;
+                    }
+                    return all.map((v) => v.value).join('');
                 })
             },
             set: async (namespace, key, value) => {
                 await inTx(root, async (ctx) => {
                     if (value) {
-                        dirs.cache.set(ctx, [namespace, key], value);
+
+                        // Split into parts
+                        let parts: string[] = [];
+                        let w = value;
+                        while (w.length > 100_000) {
+                            let part = w.slice(0, 100_000);
+                            parts.push(part);
+                            w = w.slice(100_000);
+                        }
+                        if (w.length > 0) {
+                            parts.push(w);
+                        }
+                        if (parts.length === 0) {
+                            parts.push('');
+                        }
+
+                        if (parts.length === 1) {
+                            dirs.cache.set(ctx, [namespace, key], value);
+                        } else {
+                            dirs.cache.clear(ctx, [namespace, key]);
+                            for (let i = 0; i < parts.length; i++) {
+                                dirs.cache.set(ctx, [namespace, key, i], parts[i]);
+                            }
+                        }
                     } else {
                         dirs.cache.clear(ctx, [namespace, key]);
                     }
@@ -165,6 +192,7 @@ type TonBlock = {
         let shards = await Promise.all(shardDefs.map(async (def) => {
             if (def.seqno > 0) {
                 let tx = await backoff(() => tonClient.getShardTransactions(def.workchain, def.seqno, def.shard));
+
                 let transactions = await Promise.all(tx.map(async (v) => ({ address: v.account, lt: v.lt, hash: v.hash })));
                 return {
                     workchain: def.workchain,
@@ -199,7 +227,7 @@ type TonBlock = {
             for (let s = ss; s <= mcInfo.latestSeqno && s - ss < BATCH_SIZE; s++) {
                 ids.push(s);
             }
-            console.log('Fetching block #' + ss + ' - ' + (ss + ids.length));
+            console.log('Fetching block #' + ss + ' - ' + (ss + ids.length - 1));
             const blocks = await Promise.all(ids.map(async (seq) => {
                 return await fetchBlock(seq);
             }));
