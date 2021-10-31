@@ -221,7 +221,7 @@ type TonBlock = {
 
     // Fetching
     (async () => {
-        const BATCH_SIZE = 100;
+        const BATCH_SIZE = 10;
         for (let ss = startFrom; ss <= mcInfo.latestSeqno; ss += BATCH_SIZE) {
             let ids: number[] = [];
             for (let s = ss; s <= mcInfo.latestSeqno && s - ss < BATCH_SIZE; s++) {
