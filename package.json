@@ -7,7 +7,8 @@
   "scripts": {
     "build": "rm -fr build && tsc",
     "start": "node ./build/index.js",
-    "dev": "yarn build && yarn start"
+    "dev": "yarn build && yarn start",
+    "deploy": "pm2 start --name indexer ./src/index.ts"
   },
   "dependencies": {
     "@openland/context": "^0.5.2",
@@ -16,6 +17,8 @@
     "@types/bn.js": "^5.1.0",
     "@types/node": "^16.11.6",
     "bn.js": "^5.2.0",
+    "chalk": "^4.1.2",
+    "date-fns": "^2.25.0",
     "foundationdb": "^1.1.2",
     "teslabot": "^1.2.1",
     "ton": "^4.25.0",
