@@ -1,6 +1,5 @@
 import { Context } from "@openland/context";
 import BN from "bn.js";
-import { Address } from "ton";
 import { Block, Shard } from "../storage/storage";
 import { getStorage } from "../storage/types";
 import { TonBlock } from "../types";
