@@ -6,7 +6,7 @@ import { Address, TonClient } from 'ton';
 import { createStorage } from "./storage/createStorage";
 import { createIngress } from "./ingress/createIngress";
 import { log } from "./utils";
-import { withStorage } from "./storage/Storage";
+import { withStorage } from "./storage/types";
 import { withIngress } from "./ingress/Ingress";
 import { startSync } from "./sync/startSync";
 

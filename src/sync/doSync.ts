@@ -1,15 +1,16 @@
 import { Context } from "@openland/context";
 import { inTx } from "@openland/foundationdb";
 import { getIngress } from "../ingress/Ingress";
-import { getStorage } from "../storage/Storage";
+import { getStorage } from "../storage/types";
 import { log } from "../utils";
 import { applyBlocks } from "./applyBlock";
+import { applySeqno } from "./applySeqno";
 
 // 
 // Configuration
 //
 
-const CURRENT_VERSION = 4;
+const CURRENT_VERSION = 5;
 const MAXIMUM_INLINE = 10;
 const MAX_STREAMING_SYNC = 10000;
 
@@ -52,6 +53,9 @@ export async function doSync(parent: Context): Promise<'updated' | 'no_updates'>
 
             // Sync block
             await applyBlocks(ctx, [block]);
+
+            // Apply maximum seqno
+            applySeqno(ctx, seq);
 
             // Sync state
             storage.sync.set(ctx, ['blocks'], seq);

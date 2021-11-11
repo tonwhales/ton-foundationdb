@@ -4,7 +4,8 @@ import { Subspace, TupleItem } from "@openland/foundationdb";
 export type Storage = {
     accounts: Subspace<TupleItem[], any>;
     transactions: Subspace;
-    blocks: Subspace;
+    blocks: Subspace<TupleItem[]>;
+    blockTransactions: Subspace<TupleItem[]>;
     sync: Subspace<TupleItem[], number>;
     cache: Subspace<TupleItem[], string>;
 }

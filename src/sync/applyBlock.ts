@@ -1,11 +1,47 @@
 import { Context } from "@openland/context";
 import BN from "bn.js";
-import { getStorage } from "../storage/Storage";
+import { Address } from "ton";
+import { Block, Shard } from "../storage/storage";
+import { getStorage } from "../storage/types";
 import { TonBlock } from "../types";
+
+const EMPTY = Buffer.from([]);
 
 export async function applyBlocks(ctx: Context, blocks: TonBlock[]) {
 
     const storage = getStorage(ctx);
+
+    //
+    // Apply block shards
+    //
+
+    for (let block of blocks) {
+        let storedBlock = Block.create({
+            shards: block.shards.filter((v) => v.workchain !== -1).map((shard) => Shard.create({
+                workchain: shard.workchain,
+                seqno: shard.seqno,
+                shard: Buffer.from(new BN(shard.shard).toString('hex')),
+            }))
+        });
+        storage.blocks.set(ctx, [block.seqno], Buffer.from(Block.toBinary(storedBlock)));
+    }
+
+    //
+    // Apply block transactions
+    //
+
+    for (let block of blocks) {
+        for (let shard of block.shards) {
+            const shardId = Buffer.from(new BN(shard.shard).toString('hex'));
+            for (let tx of shard.transactions) {
+                storage.blockTransactions.set(ctx, [shard.workchain, shardId, shard.seqno, tx.address.toFriendly(), tx.lt, tx.hash], EMPTY)
+            }
+        }
+    }
+
+    //
+    // Apply  Addresses
+    //
 
     let addressState = new Map<string, {
         min: { lt: BN, hash: string, seq: number },

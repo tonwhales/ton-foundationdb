@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message Shard {
+    int32 workchain = 1;
+    uint32 seqno = 2;
+    bytes shard = 3;
+}
+
+message Block {
+    repeated Shard shards = 1;
+}
+
+message TransactionRef {
+    int32 lt = 1;
+    bytes hash = 2;
+    bytes address = 3;
+}

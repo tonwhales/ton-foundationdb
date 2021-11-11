@@ -1,6 +1,6 @@
 import { Context } from "@openland/context";
 import { Database, encoders, inTx } from "@openland/foundationdb";
-import { Storage } from "./Storage";
+import { Storage } from "./types";
 
 export async function createStorage(root: Context, db: Database): Promise<Storage> {
     let storage = await inTx(root, async (ctx) => {
@@ -11,7 +11,11 @@ export async function createStorage(root: Context, db: Database): Promise<Storag
             .withValueEncoding(encoders.json);
 
         // Blocks list
-        let blocks = await db.directories.createOrOpen(ctx, ['ton', 'blocks']);
+        let blocks = (await db.directories.createOrOpen(ctx, ['ton', 'blocks']))
+            .withKeyEncoding(encoders.tuple);
+
+        let blockTransactions = (await db.directories.createOrOpen(ctx, ['ton', 'blocks', 'tx']))
+            .withKeyEncoding(encoders.tuple);
 
         // Transactions (just reference)
         let transactions = await db.directories.createOrOpen(ctx, ['ton', 'transactions']);
@@ -26,7 +30,7 @@ export async function createStorage(root: Context, db: Database): Promise<Storag
             .withKeyEncoding(encoders.tuple)
             .withValueEncoding(encoders.string);
 
-        return { accounts, transactions, blocks, sync, cache };
+        return { accounts, transactions, blocks, blockTransactions, sync, cache };
     });
     return storage;
 }
