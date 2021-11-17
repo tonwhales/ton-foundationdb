@@ -5,6 +5,8 @@ import {
     ApolloServerPluginLandingPageGraphQLPlayground
 } from "apollo-server-core";
 import { BN } from "bn.js";
+import { Address, fromNano } from "ton";
+import { bnCodec } from "../storage/bnCodec";
 import { Block } from "../storage/storage";
 import { getStorage } from "../storage/types";
 import { log } from "../utils";
@@ -31,8 +33,15 @@ type Transaction {
     address: String!
 }
 
+type Account {
+    id: ID!
+    balance: String!
+}
+
 type Query {
   block(seq: Int): Block
+  account(id: ID!): Account
+  topAccounts: [Account!]!
 }
 `;
 
@@ -57,6 +66,9 @@ export async function startApi(parent: Context) {
                     }))
                 });
             }
+        },
+        Account: {
+            id: (src: any) => 'account:' + src.id
         },
         Transaction: {
             id: (src: any) => 'tx:' + src.hash
@@ -91,6 +103,22 @@ export async function startApi(parent: Context) {
                             workchain: shard.workchain
                         }))]
                     }
+                });
+            },
+            account: async (_: any, args: { id: string }) => {
+                return await inTx(root, async (ctx) => {
+                    let ex = (await storage.accountBalances.get(ctx, [Address.parse(args.id).toFriendly()]));
+                    if (ex) {
+                        return { id: Address.parse(args.id).toFriendly(), balance: fromNano(bnCodec.decode(ex)) };
+                    } else {
+                        return { id: Address.parse(args.id).toFriendly(), balance: '0' }
+                    }
+                });
+            },
+            topAccounts: async () => {
+                return await inTx(root, async (ctx) => {
+                    let accs = await storage.accountBalances.range(ctx, [], { limit: 100 });
+                    return accs.map((v) => ({ id: v.key[0] as string, balance: fromNano(bnCodec.decode(v.value)) }));
                 });
             }
         }

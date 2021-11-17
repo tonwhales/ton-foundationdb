@@ -6,9 +6,9 @@ export const bnCodec = {
         if (hex.length % 2 !== 0) {
             hex = '0' + hex;
         }
-        return Buffer.from(hex);
+        return Buffer.from(hex, 'hex');
     },
     decode: (src: Buffer) => {
-        return new BN(src, 'hex');
+        return new BN(src);
     }
 }
