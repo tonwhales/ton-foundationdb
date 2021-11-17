@@ -1,8 +1,10 @@
 import { Context } from "@openland/context";
 import { inTx } from "@openland/foundationdb";
+import { Address } from "ton";
 import { getIngress } from "../ingress/Ingress";
 import { getStorage } from "../storage/types";
 import { log } from "../utils";
+import { applyAccounts } from "./applyAccount";
 import { applyBlocks } from "./applyBlock";
 import { applySeqno } from "./applySeqno";
 
@@ -48,11 +50,29 @@ export async function doSync(parent: Context): Promise<'updated' | 'no_updates'>
     // Inline sync
     for (let seq = startFrom; seq <= lastSeqno; seq++) {
         log('Synching ' + seq);
+
+        // Fetch block
         const block = await ingress.ingressBlock(seq);
+
+        // Fetch accounts
+        let accounts = new Set<string>();
+        for (let shard of block.shards) {
+            for (let tx of shard.transactions) {
+                accounts.add(tx.address.toFriendly());
+            }
+        }
+        // let accountStates = await Promise.all(Array.from(accounts).map(async (account) => {
+        //     const address = Address.parseFriendly(account).address;
+        //     return { state: await ingress.ingressAccountState(address), address };
+        // }));
+
         await inTx(parent, async (ctx) => {
 
             // Sync block
             await applyBlocks(ctx, [block]);
+
+            // Sync accounts
+            // await applyAccounts(ctx, accountStates);
 
             // Apply maximum seqno
             applySeqno(ctx, seq);

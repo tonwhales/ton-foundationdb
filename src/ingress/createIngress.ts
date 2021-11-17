@@ -1,4 +1,6 @@
 import { Subspace, TupleItem } from "@openland/foundationdb";
+import BN from "bn.js";
+import { Address } from "ton";
 import { TonBlock } from "../types";
 import { backoff } from "../utils";
 import { createClient } from "./createClient";
@@ -42,6 +44,10 @@ export async function createIngress(args: { cache: Subspace<TupleItem[], string>
         };
     };
 
+    const ingressAccountState = async (address: Address) => {
+        return await client.getContractState(address);
+    }
+
     const ingressLastSeqno = async () => {
         return (await client.getMasterchainInfo()).latestSeqno;
     };
@@ -50,6 +56,7 @@ export async function createIngress(args: { cache: Subspace<TupleItem[], string>
     return {
         client,
         ingressBlock,
-        ingressLastSeqno
+        ingressLastSeqno,
+        ingressAccountState
     };
 }

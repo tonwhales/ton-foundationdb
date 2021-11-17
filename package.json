@@ -8,7 +8,8 @@
     "build": "rm -fr build && tsc",
     "start": "node ./build/index.js",
     "dev": "yarn build && yarn start",
-    "deploy": "pm2 start -f --name indexer ./src/index.ts",
+    "stop": "pm2 stop indexer",
+    "deploy": "pm2 stop indexer && pm2 start --time --name indexer ./src/index.ts",
     "proto": "protoc --ts_out . --proto_path . ./src/storage/storage.proto"
   },
   "dependencies": {

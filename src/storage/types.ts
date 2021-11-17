@@ -3,6 +3,7 @@ import { Subspace, TupleItem } from "@openland/foundationdb";
 
 export type Storage = {
     accounts: Subspace<TupleItem[], any>;
+    accountBalances: Subspace<TupleItem[], Buffer>;
     transactions: Subspace;
     blocks: Subspace<TupleItem[]>;
     blockTransactions: Subspace<TupleItem[]>;

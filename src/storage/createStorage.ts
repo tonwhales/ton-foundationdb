@@ -10,6 +10,10 @@ export async function createStorage(root: Context, db: Database): Promise<Storag
             .withKeyEncoding(encoders.tuple)
             .withValueEncoding(encoders.json);
 
+        // Account balances
+        let accountBalances = (await db.directories.createOrOpen(ctx, ['ton', 'accounts', 'balance']))
+            .withKeyEncoding(encoders.tuple);
+
         // Blocks list
         let blocks = (await db.directories.createOrOpen(ctx, ['ton', 'blocks']))
             .withKeyEncoding(encoders.tuple);
@@ -30,7 +34,7 @@ export async function createStorage(root: Context, db: Database): Promise<Storag
             .withKeyEncoding(encoders.tuple)
             .withValueEncoding(encoders.string);
 
-        return { accounts, transactions, blocks, blockTransactions, sync, cache };
+        return { accounts, transactions, blocks, blockTransactions, sync, cache, accountBalances };
     });
     return storage;
 }
