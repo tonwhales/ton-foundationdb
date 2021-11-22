@@ -43,6 +43,7 @@ type Query {
   block(seq: Int): Block
   account(id: ID!): Account
   topAccounts: [Account!]!
+  totalCoins: String!
 }
 `;
 
@@ -122,7 +123,18 @@ export async function startApi(parent: Context) {
                     let accs = await storage.accountBalances.range(ctx, []);
                     let prepared = accs.map((v) => ({ id: v.key[0] as string, balance: bnCodec.decode(v.value) }));
                     prepared.sort((a, b) => b.balance.cmp(a.balance));
-                    return prepared.slice(0, 100).map((address) => ({ id: address.id, balance: fromNano(address.balance) }));
+                    return prepared.slice(0, 1000).map((address) => ({ id: address.id, balance: fromNano(address.balance) }));
+                });
+            },
+            totalCoins: async () => {
+                return await inTx(root, async (ctx) => {
+                    let accs = await storage.accountBalances.range(ctx, []);
+                    let prepared = accs.map((v) => ({ id: v.key[0] as string, balance: bnCodec.decode(v.value) }));
+                    let sum = new BN(0);
+                    for (let p of prepared) {
+                        sum = sum.add(p.balance);
+                    }
+                    return fromNano(sum);
                 });
             }
         }
