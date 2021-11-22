@@ -35,6 +35,7 @@ type Transaction {
 
 type Account {
     id: ID!
+    address: String!
     balance: String!
 }
 
@@ -68,7 +69,8 @@ export async function startApi(parent: Context) {
             }
         },
         Account: {
-            id: (src: any) => 'account:' + src.id
+            id: (src: any) => 'account:' + src.id,
+            address: (src: any) => src.id
         },
         Transaction: {
             id: (src: any) => 'tx:' + src.hash
@@ -117,8 +119,10 @@ export async function startApi(parent: Context) {
             },
             topAccounts: async () => {
                 return await inTx(root, async (ctx) => {
-                    let accs = await storage.accountBalances.range(ctx, [], { limit: 100 });
-                    return accs.map((v) => ({ id: v.key[0] as string, balance: fromNano(bnCodec.decode(v.value)) }));
+                    let accs = await storage.accountBalances.range(ctx, []);
+                    let prepared = accs.map((v) => ({ id: v.key[0] as string, balance: bnCodec.decode(v.value) }));
+                    prepared.sort((a, b) => b.balance.cmp(a.balance));
+                    return prepared.slice(0, 100).map((address) => ({ id: address.id, balance: fromNano(address.balance) }));
                 });
             }
         }
