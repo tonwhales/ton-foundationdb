@@ -61,10 +61,10 @@ export async function doSync(parent: Context): Promise<'updated' | 'no_updates'>
                 accounts.add(tx.address.toFriendly());
             }
         }
-        // let accountStates = await Promise.all(Array.from(accounts).map(async (account) => {
-        //     const address = Address.parseFriendly(account).address;
-        //     return { state: await ingress.ingressAccountState(address), address };
-        // }));
+        let accountStates = await Promise.all(Array.from(accounts).map(async (account) => {
+            const address = Address.parseFriendly(account).address;
+            return { state: await ingress.ingressAccountState(address), address };
+        }));
 
         await inTx(parent, async (ctx) => {
 
@@ -72,7 +72,7 @@ export async function doSync(parent: Context): Promise<'updated' | 'no_updates'>
             await applyBlocks(ctx, [block]);
 
             // Sync accounts
-            // await applyAccounts(ctx, accountStates);
+            await applyAccounts(ctx, accountStates);
 
             // Apply maximum seqno
             applySeqno(ctx, seq);
